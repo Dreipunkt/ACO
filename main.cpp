@@ -273,7 +273,7 @@ struct Grid {
 };
 
 void showHelp() {
-    cout << "USAGE:" << endl;
+    cout << "Usage: ACO.exe Path_to_datafile Startnode Endnode Number_of_iterations" << endl;
 }
 
 Grid readMatrix(char* filename) {
@@ -300,16 +300,19 @@ Grid readMatrix(char* filename) {
 int main(int argc, char* argv[]) {
 
     int start = 0;
-    int ende = 4;
-    int iterNum = 100;
+    int ende = 1;
+    int iterNum = 1;
 
-    if (argc < 2) {
+    if (argc < 5) {
         showHelp();
         return 0;
     }
     else {  // Parameter korrekt
         Solution s;
         Grid g = readMatrix(argv[1]);
+        start = atoi(argv[2]);
+        ende = atoi(argv[3]);
+        iterNum = atoi(argv[4]);
         ACO aco(g.n, g.matrix, start, ende, iterNum);
         s = aco.run();
 
