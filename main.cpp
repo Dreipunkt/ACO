@@ -3,6 +3,8 @@
 #include <cmath>
 #include <random>
 
+#define DEBUG_MODE false // Flag zum Anzeigen von Debugging Ausgaben (Normalzustand: false)
+
 using namespace std;
 
 // Hilfskontrukt zur Speicherung und Weiterverarbeitung von Lösungen
@@ -28,30 +30,41 @@ private:
         int bCount = 0;
 
         for (int i = 0; i < n; i++) {
+            if(DEBUG_MODE) cout << "PROB " << prob[i] << endl; //D
             if (prob[i] > 0) bCount++;
         }
 
+
+
         int* bound = new int[bCount];
         int* corr = new int[bCount];
+
         bCount = 0;
 
         for (int i = 0; i < n; i++) {
             if (prob[i] > 0) {
-                bound[bCount++] = (int) (prob[i] * 100000);
+                bound[bCount++] = (int) (prob[i] * 10000);     // Faktor regelt Genauigkeit der Verteilung (MAXIMAL 30000)
                 corr[bCount - 1] = i;
+                if(DEBUG_MODE) cout << "BOUND " << bound[bCount - 1] << endl; //D
+                if(DEBUG_MODE) cout << "CORR " << corr[bCount - 1] << endl; //D
             }
         }
 
         for (int i = 0; i < bCount; i++) {
             if (i > 0) bound[i] = bound[i] + bound[i-1];
-
+            if(DEBUG_MODE) cout << "BOUND_ADD " << bound[i] << endl; //D
         }
 
+        if(DEBUG_MODE) cout << "RAND_MAX " << (bound[bCount - 1] + 1) << endl; //D
         int rando = rand() % (bound[bCount - 1] + 1);
+
+        if(DEBUG_MODE) cout << "RAND " << rando << endl; //D
+
 
         for (int i = 0; i < bCount; i++) {
             if (rando <= bound[i]) return corr[i];
         }
+
         return 0;   // eigentlich irrelevant, außer bei Fehlern
     }
 
@@ -110,6 +123,7 @@ public:
             delete[] tempPath;
             s.path[s.anzNodes - 1] = pos;
 
+            if(DEBUG_MODE) cout << "POS " << pos << endl; //D
             if (pos == ziel) break;
 
         }
@@ -159,18 +173,39 @@ private:
         }
     }
 
-    // Logik zum Updaten der Pheromon-Map TODO
+    // Logik zum Updaten der Pheromon-Map
     void pheroUpdate(Solution* s) {
+        double decay = 0.1; // Decay-Faktor der Spuren zwischen 0 und 1 (groesser --> schnelleres Verschwinden alter Spuren)
 
+        // decay
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                pheroMap[i][j] *= (1.0 - decay);
+            }
+        }
+
+        double q = 1.0;     // Qualitätsfaktor (sollte möglichst nahe an optimaler Lösung liegen)
+
+        // hinzufügen der neuen Pheromone
+        for (int i = 0; i < antnum; i++) {
+            for (int j = 0; j < s[i].anzNodes - 1; j++) {
+                pheroMap[s[i].path[j]][s[i].path[j + 1]] += (q / s[i].length);
+            }
+        }
     }
 
     // alle Ameisen auf den Weg schicken und bestes Ergebnis des Durchgangs retunieren
     Solution antsRun() {
+
         Solution* s = new Solution[antnum];
         for (int i = 0; i < antnum; i++) {
+
             ants[i].setPheroMap(pheroMap);
+
             s[i] = ants[i].findTarget();
         }
+
+
 
         pheroUpdate(s);     // update der Pheromon-Map
 
@@ -265,7 +300,8 @@ Grid readMatrix(char* filename) {
 int main(int argc, char* argv[]) {
 
     int start = 0;
-    int ende = 1;
+    int ende = 4;
+    int iterNum = 100;
 
     if (argc < 2) {
         showHelp();
@@ -274,7 +310,7 @@ int main(int argc, char* argv[]) {
     else {  // Parameter korrekt
         Solution s;
         Grid g = readMatrix(argv[1]);
-        ACO aco(g.n, g.matrix, start, ende, 1);
+        ACO aco(g.n, g.matrix, start, ende, iterNum);
         s = aco.run();
 
         // Ausgabe
