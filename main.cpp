@@ -5,8 +5,10 @@
 
 using namespace std;
 
+// Hilfskontrukt zur Speicherung und Weiterverarbeitung von Lösungen
 struct Solution {
     int* path;
+    int anzNodes;
     double length;
 };
 
@@ -17,6 +19,7 @@ private:
     double** matrix;
     double** pheroMap;
     int n;
+    int ziel;
     double alpha = 0.5;     // Gewichtung von Pheromonen (groesser-gleich 0)
     double beta = 1;        // Gewichtung der Entfernung (groesser-gleich 1)
 
@@ -26,35 +29,63 @@ public:
 
     ~Ant() {}
 
-    void setup(int start, double** matrix, double** pheroMap, int n) {
+    // initialisierung nach Kontruktor, da durch dynamisches Array Kontruktoraufruf mit Parametern nicht möglich
+    void setup(int start, double** matrix, double** pheroMap, int n, int ziel) {
         Ant::pos = start;
         Ant::matrix = matrix;
         Ant::pheroMap = pheroMap;
         Ant::n = n;
+        Ant::ziel = ziel;
     }
 
+    // Ameise läuft solange, bis Weg zum Ziel gefunden. Weg wird gespeichert.
     Solution findTarget() {
-        int anzNodes = 1;
         Solution s;
-        s.path = new int[anzNodes];
-        s.path[anzNodes - 1] = pos;
+        s.path = new int[1];
+        s.anzNodes = 1;
+        s.path[0] = pos;
         s.length = 0;
 
-        double* prob = new double[n];
+        while (true) {
 
-        double aSum = allowedSum();
+            double *prob = new double[n];
 
-        for (int i = 0; i < n; i++) {
-            if (pos == i) prob[i] = 0;
-            else if (matrix[pos][i] == -1) prob[i] = 0;
-            else {
-                prob[i] = (pow(pheroMap[pos][i], alpha)*(pow(1.0/matrix[pos][i], beta)))/aSum;
+            double aSum = allowedSum();
+
+            for (int i = 0; i < n; i++) {
+                if (pos == i) prob[i] = 0;
+                else if (matrix[pos][i] == -1) prob[i] = 0;
+                else {
+                    prob[i] = (pow(pheroMap[pos][i], alpha) * (pow(1.0 / matrix[pos][i], beta))) / aSum;
+                }
             }
+
+            int newNode = rand() % n; // COMPLETELY RANDOM !!!!!!! TODO
+
+            s.length += matrix[pos][newNode];
+            pos = newNode;
+            s.anzNodes++;
+            int *tempPath = new int[s.anzNodes - 1];
+            for (int i = 0; i < (s.anzNodes - 1); i++) {
+                tempPath[i] = s.path[i];
+            }
+            delete[] s.path;
+            s.path = new int[s.anzNodes];
+            for (int i = 0; i < (s.anzNodes - 1); i++) {
+                s.path[i] = tempPath[i];
+            }
+            delete[] tempPath;
+            s.path[s.anzNodes - 1] = pos;
+
+            if (pos == ziel) break;
+
         }
 
-        cout << prob[2];
+        return s;
+
     }
 
+    // Hilfsfunktion zur Berechnung der Wegfindungsfunktion
     double allowedSum() {
         double sum = 0;
 
@@ -66,6 +97,10 @@ public:
         }
 
         return sum;
+    }
+
+    void setPheroMap(double** nPheroMap) {
+        Ant::pheroMap = nPheroMap;
     }
 
 };
@@ -87,15 +122,29 @@ private:
     void initAnts() {
         ACO::ants = new Ant[antnum];
         for (int i = 0; i < antnum; i++) {
-            ants[i].setup(start, matrix, pheroMap, n);
+            ants[i].setup(start, matrix, pheroMap, n, ziel);
         }
     }
 
+    // alle Ameisen auf den Weg schicken und bestes Ergebnis des Durchgangs speichern
     void antsRun() {
         Solution* s = new Solution[antnum];
         for (int i = 0; i < antnum; i++) {
+            ants[i].setPheroMap(pheroMap);
             s[i] = ants[i].findTarget();
         }
+
+        int minI = 0;
+        double minV = s[0].length;
+
+        for (int i = 1; i < antnum; i++) {
+            if (s[i].length < minV) {
+                minI = i;
+                minV = s[i].length;
+            }
+        }
+
+        bestSolution = s[minI];
     }
 
 public:
@@ -114,6 +163,7 @@ public:
             ACO::antnum = antnum;
         }
 
+        // Startzustand der Pheromone herstellen
         pheroMap = new double*[n];
         for (int i = 0; i < n; i++) {
             pheroMap[i] = new double[n];
@@ -121,14 +171,18 @@ public:
                 pheroMap[i][j] = 0.1;
             }
         }
+
     }
 
     ~ACO() {}
 
+    // Hauptschleife
     Solution run() {
         for (int i = 0; i < iter; i++) {
             initAnts();
             antsRun();
+            // update PheroMap TODO
+
         }
 
         return bestSolution;
@@ -136,6 +190,7 @@ public:
 
 };
 
+// Hilfskontrukt zur Übergabe der eingelesenen Matrix
 struct Grid {
     int n;
     double** matrix;
@@ -175,9 +230,15 @@ int main(int argc, char* argv[]) {
         showHelp();
         return 0;
     }
-    else {
+    else {  // Parameter korrekt
+        Solution s;
         Grid g = readMatrix(argv[1]);
         ACO aco(g.n, g.matrix, start, ende, 10);
-        aco.run();
+        s = aco.run();
+        cout << "Beste Loesung:" << endl;
+        cout << "Laenge: " << s.length << endl;
+        cout << "Weg: ";
+        for (int i = 0; i < s.anzNodes; i++) cout << s.path[i] << " ";
+        cout << endl;
     }
 }
