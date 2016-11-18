@@ -23,6 +23,38 @@ private:
     double alpha = 0.5;     // Gewichtung von Pheromonen (groesser-gleich 0)
     double beta = 1;        // Gewichtung der Entfernung (groesser-gleich 1)
 
+    // wählt anhand der Wahrscheinlichkeits-Map einen Knoten aus
+    int getNextNode(double* prob) {
+        int bCount = 0;
+
+        for (int i = 0; i < n; i++) {
+            if (prob[i] > 0) bCount++;
+        }
+
+        int* bound = new int[bCount];
+        int* corr = new int[bCount];
+        bCount = 0;
+
+        for (int i = 0; i < n; i++) {
+            if (prob[i] > 0) {
+                bound[bCount++] = (int) (prob[i] * 100000);
+                corr[bCount - 1] = i;
+            }
+        }
+
+        for (int i = 0; i < bCount; i++) {
+            if (i > 0) bound[i] = bound[i] + bound[i-1];
+
+        }
+
+        int rando = rand() % (bound[bCount - 1] + 1);
+
+        for (int i = 0; i < bCount; i++) {
+            if (rando <= bound[i]) return corr[i];
+        }
+        return 0;   // eigentlich irrelevant, außer bei Fehlern
+    }
+
 public:
 
     Ant(){}
@@ -52,15 +84,16 @@ public:
 
             double aSum = allowedSum();
 
+            // erstellen der Wahrscheinlichkeits-Map
             for (int i = 0; i < n; i++) {
-                if (pos == i) prob[i] = 0;
-                else if (matrix[pos][i] == -1) prob[i] = 0;
+                if (matrix[pos][i] == -1) prob[i] = 0;
                 else {
                     prob[i] = (pow(pheroMap[pos][i], alpha) * (pow(1.0 / matrix[pos][i], beta))) / aSum;
                 }
             }
 
-            int newNode = rand() % n; // COMPLETELY RANDOM !!!!!!! TODO
+            // auswählen des nächsten Knotens auf Basis der Wahrscheinlichkeiten
+            int newNode = getNextNode(prob);
 
             s.length += matrix[pos][newNode];
             pos = newNode;
@@ -126,13 +159,20 @@ private:
         }
     }
 
-    // alle Ameisen auf den Weg schicken und bestes Ergebnis des Durchgangs speichern
-    void antsRun() {
+    // Logik zum Updaten der Pheromon-Map TODO
+    void pheroUpdate(Solution* s) {
+
+    }
+
+    // alle Ameisen auf den Weg schicken und bestes Ergebnis des Durchgangs retunieren
+    Solution antsRun() {
         Solution* s = new Solution[antnum];
         for (int i = 0; i < antnum; i++) {
             ants[i].setPheroMap(pheroMap);
             s[i] = ants[i].findTarget();
         }
+
+        pheroUpdate(s);     // update der Pheromon-Map
 
         int minI = 0;
         double minV = s[0].length;
@@ -144,7 +184,7 @@ private:
             }
         }
 
-        bestSolution = s[minI];
+        return s[minI];
     }
 
 public:
@@ -168,7 +208,7 @@ public:
         for (int i = 0; i < n; i++) {
             pheroMap[i] = new double[n];
             for (int j = 0; j < n; j++) {
-                pheroMap[i][j] = 0.1;
+                pheroMap[i][j] = 1.0;
             }
         }
 
@@ -176,13 +216,14 @@ public:
 
     ~ACO() {}
 
-    // Hauptschleife
+    // Hauptschleife, retuniert beste Lösung aller Durchgänge
     Solution run() {
         for (int i = 0; i < iter; i++) {
+            Solution s;
             initAnts();
-            antsRun();
-            // update PheroMap TODO
-
+            s = antsRun();  // update der Pheromon-Map erfolgt auch hier
+            if (i == 0) bestSolution = s;
+            else if (s.length < bestSolution.length) bestSolution = s;
         }
 
         return bestSolution;
@@ -233,8 +274,10 @@ int main(int argc, char* argv[]) {
     else {  // Parameter korrekt
         Solution s;
         Grid g = readMatrix(argv[1]);
-        ACO aco(g.n, g.matrix, start, ende, 10);
+        ACO aco(g.n, g.matrix, start, ende, 1);
         s = aco.run();
+
+        // Ausgabe
         cout << "Beste Loesung:" << endl;
         cout << "Laenge: " << s.length << endl;
         cout << "Weg: ";
