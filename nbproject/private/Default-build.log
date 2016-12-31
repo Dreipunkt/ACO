@@ -1,0 +1,4 @@
+Scanning dependencies of target ACO
+[ 50%] Building CXX object CMakeFiles/ACO.dir/main.cpp.o
+[100%] Linking CXX executable ACO
+[100%] Built target ACO

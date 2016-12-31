@@ -1,1 +1,9 @@
 /Debug/
+/.idea/
+/.settings/
+/CMakeFiles/
+/CMakeCache.txt
+/compile_commands.json
+/ACO
+/Makefile
+/cmake_install.cmake
