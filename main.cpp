@@ -3,7 +3,9 @@
 #include <cmath>
 #include <random>
 
-#define DEBUG_MODE false // Flag zum Anzeigen von Debugging Ausgaben (Normalzustand: false)
+//#define DEBUG_MODE true // Flag zum Anzeigen von Debugging Ausgaben (Normalzustand: false)
+
+bool DEBUG_MODE;
 
 using namespace std;
 
@@ -273,7 +275,7 @@ struct Grid {
 };
 
 void showHelp() {
-    cout << "Usage: ACO.exe Path_to_datafile Startnode Endnode Number_of_iterations" << endl;
+    cout << "Usage: ACO Path_to_datafile Startnode Endnode Number_of_iterations Debug_mode\nDebug_mode: '0' do not show detailed output, '1' show detailed output" << endl;
 }
 
 Grid readMatrix(char* filename) {
@@ -303,7 +305,7 @@ int main(int argc, char* argv[]) {
     int ende = 1;
     int iterNum = 1;
 
-    if (argc < 5) {
+    if (argc < 6) {
         showHelp();
         return 0;
     }
@@ -313,6 +315,7 @@ int main(int argc, char* argv[]) {
         start = atoi(argv[2]);
         ende = atoi(argv[3]);
         iterNum = atoi(argv[4]);
+        DEBUG_MODE = atoi(argv[5]);
         ACO aco(g.n, g.matrix, start, ende, iterNum);
         s = aco.run();
 
