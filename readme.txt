@@ -16,5 +16,3 @@ Debug_mode - Ausführlichere Ausgabe ('0' deaktivieren, '1' aktivieren)
 ## Allgemeines ##
 
 Konstanten wie alpha, beta, der Verfallfaktor von Spuren, usw. wurden (mit sinnvollen Werten) im Sourcecode festgelegt.
-
-
