@@ -6,6 +6,12 @@
       </df>
       <df name=".settings">
       </df>
+      <df name="ACO_Examples">
+        <df name="Ex1">
+        </df>
+        <df name="Ex2">
+        </df>
+      </df>
       <df name="CMakeFiles">
         <df name="3.5.1">
           <df name="CompilerIdC">
